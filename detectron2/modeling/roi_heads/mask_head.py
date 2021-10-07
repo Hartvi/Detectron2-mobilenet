@@ -51,7 +51,6 @@ def mask_rcnn_loss(pred_mask_logits: torch.Tensor, instances: List[Instances], v
     total_num_masks = pred_mask_logits.size(0)
     mask_side_len = pred_mask_logits.size(2)
     assert pred_mask_logits.size(2) == pred_mask_logits.size(3), "Mask prediction must be square!"
-
     gt_classes = []
     gt_masks = []
     for instances_per_image in instances:
@@ -134,19 +133,29 @@ def mask_rcnn_inference(pred_mask_logits: torch.Tensor, pred_instances: List[Ins
             to the caller.
     """
     cls_agnostic_mask = pred_mask_logits.size(1) == 1
-
+    # for i in range(len(pred_mask_logits[0])):
+    #     print(pred_mask_logits[0][i])
+    # print(str(pred_mask_logits.size()))
+    # print(str(pred_mask_logits[0].size()))
+    # print(str(pred_mask_logits[0][0].size()))
+    # print(str(pred_mask_logits[0][0][0].size()))
     if cls_agnostic_mask:
         mask_probs_pred = pred_mask_logits.sigmoid()
     else:
         # Select masks corresponding to the predicted classes
         num_masks = pred_mask_logits.shape[0]
+        # print("pred_instances:",pred_instances)
         class_pred = cat([i.pred_classes for i in pred_instances])
+        # print("class_pred size:", class_pred.size())
         indices = torch.arange(num_masks, device=class_pred.device)
         mask_probs_pred = pred_mask_logits[indices, class_pred][:, None].sigmoid()
+        # print("class_pred size:", class_pred.size())
     # mask_probs_pred.shape: (B, 1, Hmask, Wmask)
 
     num_boxes_per_image = [len(i) for i in pred_instances]
     mask_probs_pred = mask_probs_pred.split(num_boxes_per_image, dim=0)
+    # with open("pred_mask_logits.txt", "wb") as f:
+    #     f.write(str(pred_mask_logits))
 
     for prob, instances in zip(mask_probs_pred, pred_instances):
         instances.pred_masks = prob  # (1, Hmask, Wmask)

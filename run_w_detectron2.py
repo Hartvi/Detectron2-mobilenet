@@ -34,9 +34,10 @@ from detectron2.evaluation import (
     SemSegEvaluator,
     verify_results,
 )
+import numpy as np
 
 from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
-
+from patch_based_material_recognition.utils import ImageInfos
 from image_to_outputs import detectron2_outputs_to_mobile_inputs
 
 
@@ -91,7 +92,7 @@ def main():
     cfg = setup()
     cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
 
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.2  # THRESHOLD
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = THRESHOLD
     cfg.DATASETS.TEST = (
         "/local/temporary/DATASET/TRAIN",)  # must be a tuple, for the inner workings of detectron2 (stupid, we know :/)
     predictor = DefaultPredictor(cfg)
@@ -99,22 +100,33 @@ def main():
     # testing image cutouts
     # im = cv2.imread(pred_dir + '/' + image_names[0])  # is numpy.ndarray
     # outputs = predictor(im)
-    # detectron2_output_to_mobile_input(im, outputs)
     real_image_names = [pred_dir+"/"+im for im in image_names]
     # save_separate_masks(predictor, real_image_names)
     d2_out = detectron2_outputs_to_mobile_inputs(predictor, real_image_names)
-    # print(d2_out)
-    im_files, mobile_inputs, detectron_outputs = d2_out
-    print("detectron ouputs size:", detectron_outputs[0].scores.size())
-    print("mobile inputs shape: ", mobile_inputs[0].shape)
-    exit()
-    material_outputs = get_materials_from_patches(mobile_inputs)
-    for im, mat in zip(im_files, material_outputs):
-        print(im, mat)
+    # `im_files`: list of names of input images. Shape: (len(im_files), )
+    # `mobile_inputs`: imgs to be fed into mobilenet. Shape: (imlen, number of predicted bboxes, *img_dims)
+    # `mobile_input_selection`: (len(im_files), bools field of len(mobile_inputs) where
+    #                                                                      [deformation of mobile_inputs < threshold], )
+    # `detectron_outputs`: list of standard detectron outputs. Shape: (len(im_files), )
+    im_files, mobile_inputs, mobile_input_selection, detectron_outputs = d2_out
+    infos = ImageInfos(im_files=im_files)
+    infos.update_with_detectron_outputs(detectron_outputs)
+    infos.update_with_mobile_input_selection(mobile_input_selection)
+
+    # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
+    material_outputs = get_materials_from_patches(get_np_elements_a_layer_deeper(mobile_inputs, mobile_input_selection))
+    infos.update_with_mobile_outputs(material_outputs)
+    for info in infos.infos:
+        print(info)
+    # for im, mat in zip(im_files, material_outputs):
+    #     print(im, mat)
     with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "results.txt"), "w") as results:
         for im, mat in zip(im_files, material_outputs):
             results.write(im+":\n"+str(mat)+"\n")
-            print(im, mat)
+
+
+def get_np_elements_a_layer_deeper(nparr, indices3D):
+    return np.array([nparr[k][ind] for k, ind in enumerate(indices3D)])
 
 
 if __name__ == "__main__":

@@ -37,14 +37,17 @@ from detectron2.evaluation import (
 
 import numpy as np
 from PIL import Image
+from typing import List, Tuple
+
 
 # __all__ = []
 
 
-def detectron2_outputs_to_mobile_inputs(predictor, image_names):
+def detectron2_outputs_to_mobile_inputs(predictor, image_names) -> Tuple[List[str], np.array, np.ndarray, List]:
     # ret = list()
     im_names = list()
     mobile_inputs = list()
+    mobile_input_selection = list()
     detectron_outputs = list()
     for cnt, im_name in enumerate(image_names):
         # path = pred_dir + '/' + im_name
@@ -55,14 +58,15 @@ def detectron2_outputs_to_mobile_inputs(predictor, image_names):
         #    members: _image_size 2tuple, pred_boxes 4tuple,
         #    scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
         # square_outputs, deformations = get_mobilenet_input(im, output)
-        inputs = detectron2_output_to_mobile_input(im, output)  # this converts BGR to RGB
+        inputs, indices = detectron2_output_to_mobile_input(im, output)  # this converts BGR to RGB
         im_names.append(im_name)
         mobile_inputs.append(inputs)
+        mobile_input_selection.append(indices)
         detectron_outputs.append(output)
-    return im_names, mobile_inputs, detectron_outputs
+    return im_names, np.array(mobile_inputs), np.array(mobile_input_selection), detectron_outputs
 
 
-def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_deformation=3):
+def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_deformation=3) -> np.array:
     """outputs["instances"]
        members: _image_size 2tuple, pred_boxes 4tuple,
        scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
@@ -73,7 +77,7 @@ def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_d
     mobile_net_images = list()
     selected_indices = list()
     height, width = im.shape[0:2]
-    print("before conversion to mobile inputs:", len(output.pred_masks))
+    # print("before conversion to mobile inputs:", len(output.pred_masks))
     for i in range(len(output.pred_masks)):
         x1, y1, x2, y2 = pred_box_to_bounding_box(output.pred_boxes[i])
         # there might be discrepancies in the image size
@@ -83,25 +87,21 @@ def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_d
         dx = x2-x1
         dy = y2-y1
         deformation = round(float(deformation_score(dx, dy, outsize*outsize)), 2)
+        sub_image = im[y1:y2, x1:x2, ::-1]  # cut out instance bounding box, bgr => rgb
+        resized_image = cv2.resize(sub_image, dsize=(outsize, outsize), interpolation=cv2.INTER_CUBIC)
+        # print(type(resized_image))
+        mobile_net_images.append(resized_image)
         if deformation < max_deformation:
-            sub_image = im[y1:y2, x1:x2, ::-1]  # cut out instance bounding box, bgr => rgb
-            resized_image = cv2.resize(sub_image, dsize=(outsize, outsize), interpolation=cv2.INTER_CUBIC)
-            mobile_net_images.append(resized_image)
-            # print("w:", sub_image.shape[1], "h:", sub_image.shape[0], "targetsize", outsize, deformation_score(sub_image.shape[1], sub_image.shape[0], outsize**2))
-            # print(type(sub_image))
-            # out_im = Image.fromarray(resized_image)
-            # out_im.save("bbox_vis-{}-{}_{}_{}_{}.png".format(i, x1, y1, x2, y2))
-            # out_im.save("bbox_vis-{}-{}_{}_{}_{}.png".format(deformation, x1, y1, x2, y2))
-            # print(sub_image.shape)
-            # for j in range(len(out_im)):
-            #     for k in range(len(out_im[0])):
-            #         out_im[j, k] = np.array(list(255 if outputs.pred_masks[i, j, k] else 0 for l in range(3)))
-    return np.array(mobile_net_images),
+            selected_indices.append(True)
+        else:
+            selected_indices.append(False)
+    return np.array(mobile_net_images), np.array(selected_indices)
 
 # def overlap1D(xmin1, xmin2, xmax1, xmax2):
 #     return xmax1 >= xmin2 and xmax2 >= xmin1
 #
 # def overlap2D(box1, box2):
+
 
 def get_mobilenet_input(im, output, padding=30, outsize=362, max_deformation=3):
     """outputs["instances"]

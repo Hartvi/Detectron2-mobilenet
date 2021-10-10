@@ -37,7 +37,7 @@ from detectron2.evaluation import (
 import numpy as np
 
 from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
-from patch_based_material_recognition.utils import ImageInfos
+from patch_based_material_recognition.utils import ImageInfos, gpu_to_numpy, get_category_points_from_csb
 from image_to_outputs import detectron2_outputs_to_mobile_inputs
 
 
@@ -97,36 +97,69 @@ def main():
         "/local/temporary/DATASET/TRAIN",)  # must be a tuple, for the inner workings of detectron2 (stupid, we know :/)
     predictor = DefaultPredictor(cfg)
 
-    # testing image cutouts
     # im = cv2.imread(pred_dir + '/' + image_names[0])  # is numpy.ndarray
     # outputs = predictor(im)
+    # DETECTRON INSTANCE SECTION
     real_image_names = [pred_dir+"/"+im for im in image_names]
     # save_separate_masks(predictor, real_image_names)
-    d2_out = detectron2_outputs_to_mobile_inputs(predictor, real_image_names)
+    intermediate_data = detectron2_outputs_to_mobile_inputs(predictor, real_image_names)
     # `im_files`: list of names of input images. Shape: (len(im_files), )
     # `mobile_inputs`: imgs to be fed into mobilenet. Shape: (imlen, number of predicted bboxes, *img_dims)
-    # `mobile_input_selection`: (len(im_files), bools field of len(mobile_inputs) where
-    #                                                                      [deformation of mobile_inputs < threshold], )
     # `detectron_outputs`: list of standard detectron outputs. Shape: (len(im_files), )
-    im_files, mobile_inputs, mobile_input_selection, detectron_outputs = d2_out
-    infos = ImageInfos(im_files=im_files)
-    infos.update_with_detectron_outputs(detectron_outputs)
-    infos.update_with_mobile_input_selection(mobile_input_selection)
+    im_names = intermediate_data.im_names
+    detectron_instances = intermediate_data.outputs
+    mobile_inputs = intermediate_data.inputs.mobile_inputs
+    detectron_inputs = intermediate_data.inputs.detectron_inputs
+    infos = ImageInfos(len(im_names))
+    infos.update_with_im_names(im_names)
+    infos.update_with_detectron_outputs(detectron_instances)
 
+    # MOBILE NET MATERIAL SECTION
     # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
-    material_outputs = get_materials_from_patches(get_np_elements_a_layer_deeper(mobile_inputs, mobile_input_selection))
+    material_outputs = get_materials_from_patches(mobile_inputs)
     infos.update_with_mobile_outputs(material_outputs)
-    for info in infos.infos:
-        print(info)
-    # for im, mat in zip(im_files, material_outputs):
-    #     print(im, mat)
-    with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "results.txt"), "w") as results:
-        for im, mat in zip(im_files, material_outputs):
-            results.write(im+":\n"+str(mat)+"\n")
+
+    sensitive_threshold = 0.10
+    detectron_categories = get_detectron_categories(cfg, sensitive_threshold, detectron_inputs, infos)
+    infos.update_with_detectron_categories(detectron_categories)
+
+    # getting class distribution from the initially detected instances
+    for info in infos:
+        print(info.materials)
+        for i in info.detectron_output:
+            print(i)
+        print(info.categories)
+    # for info in infos.infos:
+    #     print(info)
+
+    # with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "results.txt"), "w") as results:
+    #     for im, mat in zip(im_names, material_outputs):
+    #         results.write(im+":\n"+str(mat)+"\n")
 
 
 def get_np_elements_a_layer_deeper(nparr, indices3D):
     return np.array([nparr[k][ind] for k, ind in enumerate(indices3D)])
+
+
+def get_detectron_categories(cfg, sensitivity, intermediate_outputs, infos) -> np.ndarray:
+    temp_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = sensitivity
+    predictor = DefaultPredictor(cfg)
+    detectron_categories = list()
+    for k, (info, ims) in enumerate(zip(infos, intermediate_outputs)):
+        # print("im:", k)
+        per_im_classes = list()
+        for im in ims:
+            outputs = predictor(im)
+            instances = outputs["instances"]
+            classes = gpu_to_numpy(instances.pred_classes)
+            scores = gpu_to_numpy(instances.scores)
+            bboxes = gpu_to_numpy(instances.pred_boxes.tensor)
+            class_points = get_category_points_from_csb(classes, scores, bboxes)
+            per_im_classes.append(np.array(class_points))
+        detectron_categories.append(np.array(per_im_classes))
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = temp_thresh
+    return np.array(detectron_categories)
 
 
 if __name__ == "__main__":

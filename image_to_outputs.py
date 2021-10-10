@@ -38,74 +38,83 @@ from detectron2.evaluation import (
 import numpy as np
 from PIL import Image
 from typing import List, Tuple
+from patch_based_material_recognition.utils import *
 
 
-# __all__ = []
+"""outputs["instances"]
+   members: _image_size 2tuple, pred_boxes 4tuple,
+   scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
 
 
-def detectron2_outputs_to_mobile_inputs(predictor, image_names) -> Tuple[List[str], np.array, np.ndarray, List]:
-    # ret = list()
-    im_names = list()
-    mobile_inputs = list()
-    mobile_input_selection = list()
-    detectron_outputs = list()
+def detectron2_outputs_to_mobile_inputs(predictor, image_names) -> IntermediateData:
+    im_names: List[str] = list()
+    inter_outputs: List[IntermediateOutput] = list()
+    mobile_inputs: List[IntermediateInput] = list()
+    detectron_inputs: List[IntermediateInput] = list()
+
     for cnt, im_name in enumerate(image_names):
-        # path = pred_dir + '/' + im_name
+        # predict
         im = cv2.imread(im_name)
         output = predictor(im)
         output = output["instances"].to("cpu")
-        # """outputs["instances"]
-        #    members: _image_size 2tuple, pred_boxes 4tuple,
-        #    scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
-        # square_outputs, deformations = get_mobilenet_input(im, output)
-        inputs, indices = detectron2_output_to_mobile_input(im, output)  # this converts BGR to RGB
+        inter_output, mobile_input, detectron_input = detectron2_output_to_mobile_input(im, output)  # this converts BGR to RGB
+        # save data
         im_names.append(im_name)
-        mobile_inputs.append(inputs)
-        mobile_input_selection.append(indices)
-        detectron_outputs.append(output)
-    return im_names, np.array(mobile_inputs), np.array(mobile_input_selection), detectron_outputs
+        mobile_inputs.append(mobile_input)
+        detectron_inputs.append(detectron_input)
+        inter_outputs.append(inter_output)
+
+    # format data
+    outputs = IntermediateOutputs(inter_outputs)
+    inputs = IntermediateInputs(mobile_inputs, detectron_inputs)
+    intermediate_data = IntermediateData(im_names, outputs, inputs)
+    return intermediate_data
 
 
-def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_deformation=3) -> np.array:
-    """outputs["instances"]
-       members: _image_size 2tuple, pred_boxes 4tuple,
-       scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
+def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_deformation=3.5):
     # Boxes.tensor: (x1, y1, x2, y2)
     # outputs = outputs["instances"].to("cpu")
     # outputs should be in this format /\
     assert im.shape[2] == 3, "Image colour channels must be last"
-    mobile_net_images = list()
-    selected_indices = list()
+    material_input = list()
+    category_input = list()
+    selected_detectron_outputs = list()
     height, width = im.shape[0:2]
     # print("before conversion to mobile inputs:", len(output.pred_masks))
-    for i in range(len(output.pred_masks)):
-        x1, y1, x2, y2 = pred_box_to_bounding_box(output.pred_boxes[i])
-        # there might be discrepancies in the image size
-        #   1. +-1 pixel
-        #   2. some amount that was cut off due to the square reaching outside of the image
-        x1, y1, x2, y2 = get_padded_extended_bbox(padding, width, height, x1, y1, x2, y2)
-        dx = x2-x1
-        dy = y2-y1
-        deformation = round(float(deformation_score(dx, dy, outsize*outsize)), 2)
-        sub_image = im[y1:y2, x1:x2, ::-1]  # cut out instance bounding box, bgr => rgb
-        resized_image = cv2.resize(sub_image, dsize=(outsize, outsize), interpolation=cv2.INTER_CUBIC)
-        # print(type(resized_image))
-        mobile_net_images.append(resized_image)
+    for i in range(len(output.pred_boxes)):
+        # ORIGINAL detectron2 instance bboxes
+        x1o, y1o, x2o, y2o = pred_box_to_bounding_box(output.pred_boxes[i])
+        # category classification detectron input
+        x1p, y1p, x2p, y2p = get_padded_bbox(padding, width, height, x1o, y1o, x2o, y2o)
+        # square image for mobile net:
+        x1s, y1s, x2s, y2s = extend_to_square(width, height, x1p, y1p, x2p, y2p)
+        dx = x2p - x1p
+        dy = y2p - y1p
+        deformation = calculate_deformation(dx, dy, outsize)
         if deformation < max_deformation:
-            selected_indices.append(True)
-        else:
-            selected_indices.append(False)
-    return np.array(mobile_net_images), np.array(selected_indices)
+            # MOBILE NET input:
+            square_image = im[y1s:y2s, x1s:x2s, ::-1]  # cut out instance bounding box, bgr => rgb
+            resized_image = cv2.resize(square_image, dsize=(outsize, outsize), interpolation=cv2.INTER_CUBIC)
+            # save next stage inputs
+            category_input.append(im[y1p:y2p, x1p:x2p, ::-1])  # padded bbox
+            material_input.append(resized_image)               # square cutout
+            # save selected detectron output
+            simple_instance = SimpleInstance(output)
+            selected_detectron_outputs.append(simple_instance)
 
-# def overlap1D(xmin1, xmin2, xmax1, xmax2):
-#     return xmax1 >= xmin2 and xmax2 >= xmin1
-#
-# def overlap2D(box1, box2):
+    intermediate_output = IntermediateOutput(selected_detectron_outputs)
+    intermediate_input = IntermediateInput(material_input)
+    intermediate_input2 = IntermediateInput(category_input)
+    return intermediate_output, intermediate_input, intermediate_input2
+
+
+def calculate_deformation(dx, dy, new_side):
+    return round(float(deformation_score(dx, dy, new_side*new_side)), 2)
 
 
 def get_mobilenet_input(im, output, padding=30, outsize=362, max_deformation=3):
     """outputs["instances"]
-       members: _image_size 2tuple, pred_boxes 4tuple,
+       members: _image_size 2tuple, pred_boxes.tensor 4tuple,
        scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
     # Boxes.tensor: (x1, y1, x2, y2)
     # outputs = outputs["instances"].to("cpu")
@@ -143,6 +152,7 @@ def get_mobilenet_input(im, output, padding=30, outsize=362, max_deformation=3):
             # out_im = Image.fromarray(resized_image)
             # out_im.save("bbox_vis-{}-{}_{}_{}_{}.png".format(deformation, x1, y1, x2, y2))
     return square_ims, deformations
+
 
 
 def detectron2_output_2_mask(output):
@@ -272,7 +282,7 @@ def main():
         return data
 
     # choose the certainity threshold
-    THRESHOLD = 0.2
+    THRESHOLD = 0.6
 
     # translate threshold into a text form
     buff = ""

@@ -6,7 +6,8 @@ import numpy as np
 import torch
 from typing import Tuple, List
 
-from .dataset_loader import MincDataset, MincLoader, get_free_gpu, category2id, id2category, ipalm_ignore_classes, categories
+from .dataset_loader import MincDataset, MincLoader, get_free_gpu
+from .material_utils import material_str2raw_id, material_raw_id2str, material_ipalm_ignore, material_all_str
 from .net import MobileNetV3Large
 
 from .test import *
@@ -30,10 +31,10 @@ def get_materials_from_patches(patches_list) -> Tuple[Tuple[Tuple[Tuple[int, flo
         )
     """
     # ignore non-ipalm materials:
-    ipalm_ids = [i for i in range(len(categories)) if categories[i] not in ipalm_ignore_classes]
+    ipalm_ids = [i for i in range(len(material_all_str)) if material_all_str[i] not in material_ipalm_ignore]
     model_path = "saved_model.pth"
 
-    model = MobileNetV3Large(n_classes=len(categories))
+    model = MobileNetV3Large(n_classes=len(material_all_str))
     model.load_state_dict(torch.load(model_path))
     if torch.cuda.is_available():
         model = model.cuda()
@@ -72,6 +73,6 @@ def get_materials_from_patch(model, image, selected_material_ids) -> Tuple[Tuple
         data = data.cuda()
     target = model(data)
     probs = get_probabilities_from_selection(target, selected_material_ids)
-    class_probs = tuple(i for i in zip(map_from_selection(selected_material_ids, id2category), to_numpy_cpu(probs)))
+    class_probs = tuple(i for i in zip(map_from_selection(selected_material_ids, material_raw_id2str), to_numpy_cpu(probs)))
     return tuple(get_classes_above_threshold(class_probs))
 

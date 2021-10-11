@@ -9,6 +9,9 @@ import detectron2
 import pycocotools
 import torch, torchvision
 from collections import OrderedDict
+
+from patch_based_material_recognition.image_utils import ImageInfos
+from patch_based_material_recognition.intermediate_data import IntermediateOutputs
 from train import setup
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
@@ -37,7 +40,7 @@ from detectron2.evaluation import (
 import numpy as np
 
 from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
-from patch_based_material_recognition.utils import ImageInfos, gpu_to_numpy, get_category_points_from_csb
+from patch_based_material_recognition.utils import *
 from image_to_outputs import detectron2_outputs_to_mobile_inputs
 
 
@@ -97,8 +100,6 @@ def main():
         "/local/temporary/DATASET/TRAIN",)  # must be a tuple, for the inner workings of detectron2 (stupid, we know :/)
     predictor = DefaultPredictor(cfg)
 
-    # im = cv2.imread(pred_dir + '/' + image_names[0])  # is numpy.ndarray
-    # outputs = predictor(im)
     # DETECTRON INSTANCE SECTION
     real_image_names = [pred_dir+"/"+im for im in image_names]
     # save_separate_masks(predictor, real_image_names)
@@ -107,56 +108,52 @@ def main():
     # `mobile_inputs`: imgs to be fed into mobilenet. Shape: (imlen, number of predicted bboxes, *img_dims)
     # `detectron_outputs`: list of standard detectron outputs. Shape: (len(im_files), )
     im_names = intermediate_data.im_names
-    detectron_instances = intermediate_data.outputs
+    detectron_instances = intermediate_data.outputs  # (number_of_images, number of instances per image)
     mobile_inputs = intermediate_data.inputs.mobile_inputs
     detectron_inputs = intermediate_data.inputs.detectron_inputs
     infos = ImageInfos(len(im_names))
     infos.update_with_im_names(im_names)
     infos.update_with_detectron_outputs(detectron_instances)
+    print("Done: detectron instance detection")
 
     # MOBILE NET MATERIAL SECTION
     # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
     material_outputs = get_materials_from_patches(mobile_inputs)
     infos.update_with_mobile_outputs(material_outputs)
+    print("Done: material classification")
 
     sensitive_threshold = 0.10
-    detectron_categories = get_detectron_categories(cfg, sensitive_threshold, detectron_inputs, infos)
+    detectron_categories = get_detectron_categories(cfg, sensitive_threshold, detectron_inputs, detectron_instances)
     infos.update_with_detectron_categories(detectron_categories)
-
-    # getting class distribution from the initially detected instances
-    for info in infos:
-        print(info.materials)
-        for i in info.detectron_output:
-            print(i)
-        print(info.categories)
-    # for info in infos.infos:
-    #     print(info)
+    print("Done: category classification")
+    print(infos)
 
     # with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "results.txt"), "w") as results:
     #     for im, mat in zip(im_names, material_outputs):
     #         results.write(im+":\n"+str(mat)+"\n")
 
 
-def get_np_elements_a_layer_deeper(nparr, indices3D):
-    return np.array([nparr[k][ind] for k, ind in enumerate(indices3D)])
-
-
-def get_detectron_categories(cfg, sensitivity, intermediate_outputs, infos) -> np.ndarray:
+def get_detectron_categories(cfg, sensitivity, intermediate_outputs, detectron_instances: IntermediateOutputs) -> np.ndarray:
     temp_thresh = cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = sensitivity
     predictor = DefaultPredictor(cfg)
     detectron_categories = list()
-    for k, (info, ims) in enumerate(zip(infos, intermediate_outputs)):
-        # print("im:", k)
+    for k, (ims, detectron_output) in enumerate(zip(intermediate_outputs, detectron_instances)):
         per_im_classes = list()
-        for im in ims:
+        for im, instance in zip(ims, detectron_output):
             outputs = predictor(im)
             instances = outputs["instances"]
             classes = gpu_to_numpy(instances.pred_classes)
             scores = gpu_to_numpy(instances.scores)
             bboxes = gpu_to_numpy(instances.pred_boxes.tensor)
-            class_points = get_category_points_from_csb(classes, scores, bboxes)
+            class_weights = get_category_weights_from_csb(classes, scores, bboxes, raw=True)
+            # originally predicted by instance detection
+            shortened_csb = [[instance.category, ], [instance.score, ], [instance.bbox, ]]
+            original_instance_weights = get_category_weights_from_csb(*shortened_csb, raw=False)
+            class_points = class_weights + original_instance_weights
+            class_points = class_points / sum(class_points)
             per_im_classes.append(np.array(class_points))
+
         detectron_categories.append(np.array(per_im_classes))
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = temp_thresh
     return np.array(detectron_categories)

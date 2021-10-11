@@ -6,7 +6,8 @@ from PIL import Image
 import numpy as np
 import torch
 
-from .dataset_loader import MincDataset, MincLoader, get_free_gpu, category2id, id2category, ipalm_ignore_classes, categories
+from .dataset_loader import MincDataset, MincLoader, get_free_gpu
+from .material_utils import material_str2raw_id, material_raw_id2str, material_ipalm_ignore, material_all_str
 # from .patch_architecture import MaterialPatchNet
 from .net import MobileNetV3Large
 import typing
@@ -24,7 +25,7 @@ def main(args):
     minc_dataset = MincDataset(root_dir)
     minc_loader = MincLoader(minc_dataset, batch_size=1)
     # ignore non-ipalm materials:
-    ipalm_ids = [i for i in range(len(categories)) if categories[i] not in ipalm_ignore_classes]
+    ipalm_ids = [i for i in range(len(material_all_str)) if material_all_str[i] not in material_ipalm_ignore]
     # print(ipalm_ids)
     # exit()
     model_path = "saved_model.pth"
@@ -63,7 +64,7 @@ def main(args):
                     target = model(data)
                     probs = get_probabilities_from_selection(target, ipalm_ids)
                     print(image, ": ", end="")
-                    class_probs = list(i for i in zip(map_from_selection(ipalm_ids, id2category), to_numpy_cpu(probs)))
+                    class_probs = list(i for i in zip(map_from_selection(ipalm_ids, material_raw_id2str), to_numpy_cpu(probs)))
                     # print(class_probs)
                     # * means unzip, aka remove the parentheses as if in code
                     print(*get_classes_above_threshold(class_probs))
@@ -127,7 +128,7 @@ def test_minc_dataset(model, minc_loader: MincLoader):
         target = model(data)
         # labels = get_top_labels(target, id2str)
         indices = get_top_indices(target)
-        l = get_labels_from_indices(indices, id2category)
+        l = get_labels_from_indices(indices, material_raw_id2str)
 
         print(l)
         im = Image.fromarray(im)

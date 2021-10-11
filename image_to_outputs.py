@@ -9,6 +9,8 @@ import detectron2
 import pycocotools
 import torch, torchvision
 from collections import OrderedDict
+
+from patch_based_material_recognition.intermediate_data import *
 from train import setup
 from detectron2.data import MetadataCatalog, DatasetCatalog
 from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
@@ -71,7 +73,7 @@ def detectron2_outputs_to_mobile_inputs(predictor, image_names) -> IntermediateD
     return intermediate_data
 
 
-def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_deformation=3.5):
+def detectron2_output_to_mobile_input(im, output, padding=50, outsize=362, max_deformation=3.5):
     # Boxes.tensor: (x1, y1, x2, y2)
     # outputs = outputs["instances"].to("cpu")
     # outputs should be in this format /\
@@ -80,7 +82,6 @@ def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_d
     category_input = list()
     selected_detectron_outputs = list()
     height, width = im.shape[0:2]
-    # print("before conversion to mobile inputs:", len(output.pred_masks))
     for i in range(len(output.pred_boxes)):
         # ORIGINAL detectron2 instance bboxes
         x1o, y1o, x2o, y2o = pred_box_to_bounding_box(output.pred_boxes[i])
@@ -99,7 +100,9 @@ def detectron2_output_to_mobile_input(im, output, padding=30, outsize=362, max_d
             category_input.append(im[y1p:y2p, x1p:x2p, ::-1])  # padded bbox
             material_input.append(resized_image)               # square cutout
             # save selected detectron output
-            simple_instance = SimpleInstance(output)
+            # print(output)
+            simple_instance = SimpleInstance(int(output.pred_classes[i]), float(output.scores[i]), output.pred_boxes[i].tensor.numpy()[0])
+            # print(simple_instance)
             selected_detectron_outputs.append(simple_instance)
 
     intermediate_output = IntermediateOutput(selected_detectron_outputs)

@@ -72,7 +72,7 @@ def _add_categories_metadata(dataset_name: str):
     metadict = get_lvis_instances_meta(dataset_name)
     categories = metadict["thing_classes"]
     metadata = MetadataCatalog.get(dataset_name)
-    metadata.categories = {i + 1: categories[i] for i in range(len(categories))}
+    metadata.material_all_str = {i + 1: categories[i] for i in range(len(categories))}
     logger = logging.getLogger(__name__)
     logger.info(f"Dataset {dataset_name} has {len(categories)} categories")
 

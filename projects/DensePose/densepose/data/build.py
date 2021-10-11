@@ -292,7 +292,7 @@ def _add_category_maps_to_metadata(cfg: CfgNode):
 def _add_category_info_to_bootstrapping_metadata(dataset_name: str, dataset_cfg: CfgNode):
     meta = MetadataCatalog.get(dataset_name)
     meta.category_to_class_mapping = get_category_to_class_mapping(dataset_cfg)
-    meta.categories = dataset_cfg.CATEGORIES
+    meta.material_all_str = dataset_cfg.CATEGORIES
     meta.max_count_per_category = dataset_cfg.MAX_COUNT_PER_CATEGORY
     logger = logging.getLogger(__name__)
     logger.info(
@@ -317,10 +317,10 @@ def _merge_categories(dataset_names: Collection[str]) -> _MergedCategoriesT:
         whitelisted_categories = meta.get("whitelisted_categories")
         category_map = meta.get("category_map", {})
         cat_ids = (
-            whitelisted_categories if whitelisted_categories is not None else meta.categories.keys()
+            whitelisted_categories if whitelisted_categories is not None else meta.material_all_str.keys()
         )
         for cat_id in cat_ids:
-            cat_name = meta.categories[cat_id]
+            cat_name = meta.material_all_str[cat_id]
             cat_id_mapped = category_map.get(cat_id, cat_id)
             if cat_id_mapped == cat_id or cat_id_mapped in cat_ids:
                 category_names[cat_id] = cat_name
@@ -329,7 +329,7 @@ def _merge_categories(dataset_names: Collection[str]) -> _MergedCategoriesT:
             # assign temporary mapped category name, this name can be changed
             # during the second pass, since mapped ID can correspond to a category
             # from a different dataset
-            cat_name_mapped = meta.categories[cat_id_mapped]
+            cat_name_mapped = meta.material_all_str[cat_id_mapped]
             merged_categories[cat_id_mapped].append(
                 _DatasetCategory(
                     id=cat_id,

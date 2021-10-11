@@ -175,9 +175,9 @@ def _load_coco_annotations(json_file: str):
 
 def _add_categories_metadata(dataset_name: str, categories: List[Dict[str, Any]]):
     meta = MetadataCatalog.get(dataset_name)
-    meta.categories = {c["id"]: c["name"] for c in categories}
+    meta.material_all_str = {c["id"]: c["name"] for c in categories}
     logger = logging.getLogger(__name__)
-    logger.info("Dataset {} categories: {}".format(dataset_name, meta.categories))
+    logger.info("Dataset {} categories: {}".format(dataset_name, meta.material_all_str))
 
 
 def _verify_annotations_have_unique_ids(json_file: str, anns: List[List[Dict[str, Any]]]):

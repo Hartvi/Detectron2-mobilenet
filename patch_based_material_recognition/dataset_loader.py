@@ -39,21 +39,6 @@ def aug(p=0.3):
             ])
 
 
-categories = ["brick", "carpet", "ceramic", "fabric", "foliage", "food", "glass", "hair", "leather",
-              "metal", "mirror", "other", "painted", "paper", "plastic", "polishedstone",
-              "skin", "sky", "stone", "tile", "wallpaper", "water", "wood"]
-
-ipalm_ignore_classes = ["mirror", "sky", "skin", "leather", "hair",
-                        "painted", "brick", "carpet", "fabric",
-                        "foliage", "food", "polishedstone", "stone", "tile",
-                        "wallpaper"]
-
-ipalm_ids = [i for i in range(len(categories)) if categories[i] not in ipalm_ignore_classes]
-
-
-category2id = {categories[i]: i for i in range(len(categories))}
-id2category = {i: categories[i] for i in range(len(categories))}
-
 
 def get_free_gpu():
     os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')

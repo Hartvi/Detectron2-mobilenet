@@ -57,7 +57,7 @@ class ImageInfo:
 
 class ImageInfos:
     def __init__(self, num):
-        self.infos = list()
+        self.infos: List[ImageInfo] = list()
         for i in range(num):
             self.infos.append(ImageInfo())
 

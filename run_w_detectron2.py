@@ -44,6 +44,83 @@ from patch_based_material_recognition.utils import *
 from image_to_outputs import detectron2_outputs_to_mobile_inputs
 
 
+def get_image_info():
+    with open("/local/temporary/DATASET/info/id_to_OWN.json") as json_labels:
+        new_dict = json.load(json_labels)
+
+    # PATHS SETUP
+    trn_data = '/local/temporary/DATASET/TRAIN'
+    pred_dir = "images_input"
+    img_output = "images_output"
+
+    # lists all images to image_names list from the dictionary using os.walk
+    image_names = []
+    for (dirpath, dirnames, filenames) in os.walk(pred_dir):
+        image_names.extend(filenames)
+        break
+
+    # orders annotations for the METADATA
+    ordered_list_of_names = []
+    for i in range(len(new_dict)):
+        ordered_list_of_names.append(new_dict[str(i)])
+
+    MetadataCatalog.get(trn_data)
+
+    # choose the certainity threshold
+    THRESHOLD = 0.6
+
+    # translate threshold into a text form
+    buff = ""
+    for c in str(THRESHOLD):
+        if c == '.':
+            c = '_'
+        buff += c
+    THRESHOLD_TXT = buff
+
+    cfg = setup()
+    cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+
+    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = THRESHOLD
+    cfg.DATASETS.TEST = (
+        "/local/temporary/DATASET/TRAIN",)  # must be a tuple, for the inner workings of detectron2 (stupid, we know :/)
+    predictor = DefaultPredictor(cfg)
+
+    # DETECTRON INSTANCE SECTION
+    real_image_names = [pred_dir + "/" + im for im in image_names]
+    intermediate_data = detectron2_outputs_to_mobile_inputs(predictor, real_image_names)
+    # `im_files`: list of names of input images. Shape: (len(im_files), )
+    # `mobile_inputs`: imgs to be fed into mobilenet. Shape: (imlen, number of predicted bboxes, *img_dims)
+    # `detectron_outputs`: list of standard detectron outputs. Shape: (len(im_files), )
+    im_names = intermediate_data.im_names
+    detectron_instances = intermediate_data.outputs  # (number_of_images, number of instances per image)
+    mobile_inputs = intermediate_data.inputs.mobile_inputs
+    detectron_inputs = intermediate_data.inputs.detectron_inputs
+    infos = ImageInfos(len(im_names))
+    infos.update_with_im_names(im_names)
+    infos.update_with_detectron_outputs(detectron_instances)
+    print("Done: detectron instance detection")
+
+    # MOBILE NET MATERIAL SECTION
+    # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
+    material_outputs = get_materials_from_patches(mobile_inputs)
+    infos.update_with_mobile_outputs(material_outputs)
+    print("Done: material classification")
+
+    sensitive_threshold = 0.10
+    detectron_categories = get_detectron_categories(cfg, sensitive_threshold, detectron_inputs, detectron_instances)
+    infos.update_with_detectron_categories(detectron_categories)
+    print("Done: category classification")
+    # print(infos)  # huge print
+    print(infos.infos[0].box_results[0].initial_bbox)
+    print(infos.infos[0].box_results[0].im_name)
+    print(infos.infos[0].box_results[0].category_list)
+    print(infos.infos[0].box_results[0].material_list)
+    # for info in infos:
+    #     for box_result in info.box_results:
+    #         print(box_result.material_list)
+    #         print(box_result.category_list)
+
+
 def main():
     with open("/local/temporary/DATASET/info/id_to_OWN.json") as json_labels:
         new_dict = json.load(json_labels)
@@ -126,7 +203,11 @@ def main():
     detectron_categories = get_detectron_categories(cfg, sensitive_threshold, detectron_inputs, detectron_instances)
     infos.update_with_detectron_categories(detectron_categories)
     print("Done: category classification")
-    print(infos)
+    # print(infos)  # huge print
+    print(infos.infos[0].box_results[0].initial_bbox)
+    print(infos.infos[0].box_results[0].im_name)
+    print(infos.infos[0].box_results[0].category_list)
+    print(infos.infos[0].box_results[0].material_list)
 
     # with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "results.txt"), "w") as results:
     #     for im, mat in zip(im_names, material_outputs):
@@ -141,6 +222,7 @@ def get_detectron_categories(cfg, sensitivity, intermediate_outputs, detectron_i
     for k, (ims, detectron_output) in enumerate(zip(intermediate_outputs, detectron_instances)):
         per_im_classes = list()
         for im, instance in zip(ims, detectron_output):
+            # detectron used as classifier
             outputs = predictor(im)
             instances = outputs["instances"]
             classes = gpu_to_numpy(instances.pred_classes)

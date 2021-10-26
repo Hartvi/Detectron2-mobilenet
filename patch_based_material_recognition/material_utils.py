@@ -33,5 +33,5 @@ material_str2raw_id = {material_all_str[i]: i for i in range(len(material_all_st
 material_raw_id2str = {i: material_all_str[i] for i in range(len(material_all_str))}
 # print(material_raw_id2str)
 
-# material_mobile2own = {"plastic": "hard/soft plastic"}  # ???
+# material_mobile2own = {"plastic": "hard/soft plastic/foam"}  # ???
 

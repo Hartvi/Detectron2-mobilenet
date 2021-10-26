@@ -204,10 +204,24 @@ def main():
     infos.update_with_detectron_categories(detectron_categories)
     print("Done: category classification")
     # print(infos)  # huge print
-    print(infos.infos[0].box_results[0].initial_bbox)
-    print(infos.infos[0].box_results[0].im_name)
-    print(infos.infos[0].box_results[0].category_list)
-    print(infos.infos[0].box_results[0].material_list)
+    dict_to_save = dict()
+    for info in infos:
+        image_boxes = list()
+        for box in info.box_results:
+            tmp = dict()
+            tmp["initial_bbox"] = np.array(box.initial_bbox).tolist()
+            tmp["category_list"] = np.array(box.category_list).tolist()
+            tmp["material_list"] = np.array(box.material_list).tolist()
+            image_boxes.append(tmp)
+        dict_to_save[info.name] = image_boxes
+
+    with open("deez_outputs.json", "w") as f:
+        json.dump(dict_to_save, f)
+     
+    #print(infos.infos[0].box_results[0].initial_bbox)
+    #print(infos.infos[0].box_results[0].im_name)
+    #print(infos.infos[0].box_results[0].category_list)
+    #print(infos.infos[0].box_results[0].material_list)
 
     # with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "results.txt"), "w") as results:
     #     for im, mat in zip(im_names, material_outputs):

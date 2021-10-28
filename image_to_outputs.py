@@ -48,6 +48,29 @@ from patch_based_material_recognition.utils import *
    scores n-tuple, pred_classes n-tuple, pred_masks n-list of images"""
 
 
+def get_detectron_categories(predictor, intermediate_outputs, detectron_instances: IntermediateOutputs) -> np.ndarray:
+    detectron_categories = list()
+    for k, (ims, detectron_output) in enumerate(zip(intermediate_outputs, detectron_instances)):
+        per_im_classes = list()
+        for im, instance in zip(ims, detectron_output):
+            # detectron used as classifier
+            outputs = predictor(im)
+            instances = outputs["instances"]
+            classes = gpu_to_numpy(instances.pred_classes)
+            scores = gpu_to_numpy(instances.scores)
+            bboxes = gpu_to_numpy(instances.pred_boxes.tensor)
+            class_weights = get_category_weights_from_csb(classes, scores, bboxes, raw=True)
+            # originally predicted by instance detection
+            shortened_csb = [[instance.category, ], [instance.score, ], [instance.bbox, ]]
+            original_instance_weights = get_category_weights_from_csb(*shortened_csb, raw=False)
+            class_points = class_weights + original_instance_weights
+            class_points = class_points / sum(class_points)
+            per_im_classes.append(np.array(class_points))
+
+        detectron_categories.append(np.array(per_im_classes))
+    return np.array(detectron_categories)
+
+
 def detectron2_outputs_to_mobile_inputs(predictor, image_names) -> IntermediateData:
     im_names: List[str] = list()
     inter_outputs: List[IntermediateOutput] = list()

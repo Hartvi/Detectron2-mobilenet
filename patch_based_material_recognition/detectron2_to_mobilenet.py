@@ -16,12 +16,13 @@ from .test import *
 __all__ = ["get_materials_from_patches", "get_materials_from_patch"]
 
 
-def get_materials_from_patches(patches_list) -> Tuple[Tuple[Tuple[Tuple[int, float]]], ...]:
+def get_materials_from_patches(patches_list, model=None) -> Tuple[Tuple[Tuple[Tuple[int, float]]], ...]:
     # list[image: list[patch:list[tuple[int,float]]], image: list[patch:list[tuple[int,float]]], ...]
     """
 
     Args:
         patches_list: list of N images, [N, H, W, C]
+        model: mobilenet model.
 
     Returns:
         (
@@ -33,9 +34,9 @@ def get_materials_from_patches(patches_list) -> Tuple[Tuple[Tuple[Tuple[int, flo
     # ignore non-ipalm materials:
     ipalm_ids = [i for i in range(len(material_all_str)) if material_all_str[i] not in material_ipalm_ignore]
     model_path = "saved_model.pth"
-
-    model = MobileNetV3Large(n_classes=len(material_all_str))
-    model.load_state_dict(torch.load(model_path))
+    if model is None:
+        model = MobileNetV3Large(n_classes=len(material_all_str))
+        model.load_state_dict(torch.load(model_path))
     if torch.cuda.is_available():
         model = model.cuda()
     else:

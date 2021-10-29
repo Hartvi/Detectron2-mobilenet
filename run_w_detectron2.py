@@ -7,7 +7,7 @@ from train import setup
 
 from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
 from patch_based_material_recognition.utils import *
-from image_to_outputs import detectron2_outputs_to_mobile_inputs
+from image_to_outputs import image_files2intermediate_data
 
 
 def main():
@@ -28,7 +28,7 @@ def main():
 
     # DETECTRON INSTANCE SECTION
     real_image_names = [pred_dir+"/"+im for im in image_names]
-    intermediate_data = detectron2_outputs_to_mobile_inputs(predictor, real_image_names)
+    intermediate_data = image_files2intermediate_data(predictor, real_image_names)
     # `im_files`: list of names of input images. Shape: (len(im_files), )
     # `mobile_inputs`: imgs to be fed into mobilenet. Shape: (imlen, number of predicted bboxes, *img_dims)
     # `detectron_outputs`: list of standard detectron outputs. Shape: (len(im_files), )

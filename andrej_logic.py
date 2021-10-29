@@ -11,11 +11,11 @@ from patch_based_material_recognition.detectron2_to_mobilenet import get_materia
 from patch_based_material_recognition.utils import *
 from patch_based_material_recognition.material_utils import material_all_str
 from patch_based_material_recognition import mapping_utils
-from image_to_outputs import detectron2_outputs_to_mobile_inputs, get_detectron_categories
+from image_to_outputs import image_files2intermediate_data, get_detectron_categories, image2intermediate_data
 from patch_based_material_recognition.net import MobileNetV3Large
 
-from typing import List
-
+from typing import List, Tuple
+from PIL import Image
 
 def get_confidence(probabilities):
     sorted_arr = np.sort(probabilities)[::-1]
@@ -74,48 +74,39 @@ class CatmatPredictor:
     def get_image_boxes(self, src):
         if type(src) == str:
             # from path
-            # DETECTRON INSTANCE SECTION
-            intermediate_data = detectron2_outputs_to_mobile_inputs(self.main_predictor, [src,])
-            im_names = intermediate_data.im_names
-            detectron_instances = intermediate_data.outputs  # (number_of_images, number of instances per image)
-            mobile_inputs = intermediate_data.inputs.mobile_inputs
-            detectron_inputs = intermediate_data.inputs.detectron_inputs
-            # ImageInfos are the data storage
-            infos = ImageInfos(len(im_names))
-            infos.update_with_im_names(im_names)
-            infos.update_with_detectron_outputs(detectron_instances)
-            # print("Done: detectron instance detection")
-
-            # MOBILE NET MATERIAL SECTION
-            # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
-            material_outputs = get_materials_from_patches(mobile_inputs)
-            infos.update_with_mobile_outputs(material_outputs)
-            # print("Done: material classification")
-
-            sensitive_threshold = 0.10
-            detectron_categories = get_detectron_categories(self.main_predictor, detectron_inputs, detectron_instances)
-            infos.update_with_detectron_categories(detectron_categories)
-            # print("Done: category classification")
-            # print(infos)  # huge print
-            # it is, after all, a single image:
-            info = infos[0]
-            image_boxes = list()
-            for box in info.box_results:
-                tmp = dict()
-                tmp["initial_bbox"] = np.array(box.initial_bbox).tolist()
-                tmp["category_list"] = np.array(box.category_list).tolist()
-                tmp["material_list"] = np.array(box.material_list).tolist()
-                image_boxes.append(tmp)
-            # dict_to_save[info.name] = image_boxes
-
-            # with open("diz_output.json", "w") as f:
-            #     json.dump(dict_to_save, f)
-            return image_boxes
-        elif type(src) == np.ndarray:
-            raise NotImplementedError("ndarrays not supported yet")
-            pass
+            intermediate_data = image_files2intermediate_data(self.main_predictor, [src, ])
+        elif type(src) == np.ndarray or type(src) == List or type(src) == Tuple:
+            # from array
+            intermediate_data = image2intermediate_data(self.main_predictor, [src, ])
         else:
             raise NotImplementedError("other iterables not supported yet")
+        im_names = intermediate_data.im_names
+        detectron_instances = intermediate_data.outputs  # (number_of_images, number of instances per image)
+        mobile_inputs = intermediate_data.inputs.mobile_inputs
+        detectron_inputs = intermediate_data.inputs.detectron_inputs
+        # ImageInfos are the data storage
+        infos = ImageInfos(len(im_names))
+        infos.update_with_im_names(im_names)
+        infos.update_with_detectron_outputs(detectron_instances)
+
+        # MOBILE NET MATERIAL SECTION
+        # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
+        material_outputs = get_materials_from_patches(mobile_inputs)
+        infos.update_with_mobile_outputs(material_outputs)
+
+        sensitive_threshold = 0.10
+        detectron_categories = get_detectron_categories(self.main_predictor, detectron_inputs, detectron_instances)
+        infos.update_with_detectron_categories(detectron_categories)
+        # it is a single image:
+        info = infos[0]
+        image_boxes = list()
+        for box in info.box_results:
+            tmp = dict()
+            tmp["initial_bbox"] = np.array(box.initial_bbox).tolist()
+            tmp["category_list"] = np.array(box.category_list).tolist()
+            tmp["material_list"] = np.array(box.material_list).tolist()
+            image_boxes.append(tmp)
+        return image_boxes
 
     def get_andrej(self, src):
         if type(src) == str:

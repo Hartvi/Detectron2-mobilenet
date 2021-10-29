@@ -1,41 +1,11 @@
 import os
 import cv2
-import tqdm
-import json
-import random
 import pickle
-import logging
-import detectron2
-import pycocotools
-import torch, torchvision
-from collections import OrderedDict
 
 from patch_based_material_recognition.intermediate_data import *
 from train import setup
-from detectron2.data import MetadataCatalog, DatasetCatalog
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
-from detectron2.utils.logger import setup_logger
-from detectron2.model_zoo import model_zoo
-from detectron2.modeling import GeneralizedRCNNWithTTA
 from detectron2.engine.defaults import DefaultPredictor
-from detectron2.utils.visualizer import ColorMode, Visualizer
-from predictor import VisualizationDemo
-import detectron2.utils.comm as comm
-from detectron2.checkpoint import DetectionCheckpointer
-from detectron2.config import get_cfg
 from detectron2.data import MetadataCatalog, DatasetCatalog
-from detectron2.engine import DefaultTrainer, default_argument_parser, default_setup, hooks, launch
-from detectron2.evaluation import (
-    CityscapesInstanceEvaluator,
-    CityscapesSemSegEvaluator,
-    COCOEvaluator,
-    COCOPanopticEvaluator,
-    DatasetEvaluators,
-    LVISEvaluator,
-    PascalVOCDetectionEvaluator,
-    SemSegEvaluator,
-    verify_results,
-)
 
 import numpy as np
 from PIL import Image
@@ -71,7 +41,32 @@ def get_detectron_categories(predictor, intermediate_outputs, detectron_instance
     return np.array(detectron_categories)
 
 
-def detectron2_outputs_to_mobile_inputs(predictor, image_names) -> IntermediateData:
+def image2intermediate_data(predictor, image_arr) -> IntermediateData:
+    im_names: List[str] = list()
+    inter_outputs: List[IntermediateOutput] = list()
+    mobile_inputs: List[IntermediateInput] = list()
+    detectron_inputs: List[IntermediateInput] = list()
+
+    # for cnt, im_name in enumerate(image_names):
+    # predict
+    # im = cv2.imread(im_name)
+    output = predictor(image_arr)
+    output = output["instances"].to("cpu")
+    inter_output, mobile_input, detectron_input = detectron2_output_to_mobile_input(image_arr, output)  # this converts BGR to RGB
+    # save data
+    im_names.append("image_from_array")
+    mobile_inputs.append(mobile_input)
+    detectron_inputs.append(detectron_input)
+    inter_outputs.append(inter_output)
+
+    # format data
+    outputs = IntermediateOutputs(inter_outputs)
+    inputs = IntermediateInputs(mobile_inputs, detectron_inputs)
+    intermediate_data = IntermediateData(im_names, outputs, inputs)
+    return intermediate_data
+
+
+def image_files2intermediate_data(predictor, image_names) -> IntermediateData:
     im_names: List[str] = list()
     inter_outputs: List[IntermediateOutput] = list()
     mobile_inputs: List[IntermediateInput] = list()

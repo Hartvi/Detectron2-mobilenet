@@ -9,13 +9,14 @@ from train import setup
 
 from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
 from patch_based_material_recognition.utils import *
-from patch_based_material_recognition.material_utils import material_all_str
+from patch_based_material_recognition.mapping_utils import material_all_str
 from patch_based_material_recognition import mapping_utils
 from image_to_outputs import image_files2intermediate_data, get_detectron_categories, image2intermediate_data
 from patch_based_material_recognition.net import MobileNetV3Large
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Union
 from PIL import Image
+
 
 def get_confidence(probabilities):
     sorted_arr = np.sort(probabilities)[::-1]
@@ -108,7 +109,7 @@ class CatmatPredictor:
             image_boxes.append(tmp)
         return image_boxes
 
-    def get_andrej(self, src):
+    def get_andrej(self, src, output_target=None) -> Union[None, List[Dict]]:
         if type(src) == str:
             boxresults = self.get_image_boxes(src)
             andrej_dicts = list()
@@ -154,8 +155,12 @@ class CatmatPredictor:
 
                 # append dict to list of dicts for one image
                 andrej_dicts.append(andrej_dict)
-            with open("andrej_dicts_yo.json", "w") as f:
-                json.dump(andrej_dicts, f)
+            if type(output_target) == str:
+                with open(output_target, "w") as f:
+                    json.dump(andrej_dicts, f)
+                return None
+            elif output_target is None:
+                return andrej_dicts
             # global precision
             # local confidence
             # list of categories

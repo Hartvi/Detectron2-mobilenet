@@ -2,8 +2,9 @@ import numpy as np
 from typing import Tuple, Union, List
 
 from .intermediate_data import IntermediateOutputs, SimpleInstance
-from .utils import shortened_id_to_str
-from .material_utils import *
+# from .utils import shortened_id_to_str
+# from .material_utils import *
+from mapping_utils import *
 
 
 class BboxResult:

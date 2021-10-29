@@ -1,6 +1,8 @@
 import collections
 from typing import Tuple, Union, List
-from .utils import *
+import numpy as np
+# from .utils import *
+from .mapping_utils import *
 
 
 class SimpleInstance:
@@ -71,7 +73,7 @@ class IntermediateInput:
     """
     Contains intermediate inputs for one image
     """
-    def __init__(self, intermediate_input: np.ndarray):
+    def __init__(self, intermediate_input: Union[List, np.ndarray]):
         self.intermediate_input = intermediate_input
 
     def __getitem__(self, item):

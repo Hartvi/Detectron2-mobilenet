@@ -3,14 +3,15 @@ import cv2
 import pickle
 
 from patch_based_material_recognition.intermediate_data import *
+from patch_based_material_recognition.utils import gpu_to_numpy, get_category_weights_from_csb
 from train import setup
 from detectron2.engine.defaults import DefaultPredictor
-from detectron2.data import MetadataCatalog, DatasetCatalog
+from detectron2.data import MetadataCatalog
 
 import numpy as np
 from PIL import Image
 from typing import List, Tuple
-from patch_based_material_recognition.utils import *
+import json
 
 
 """outputs["instances"]

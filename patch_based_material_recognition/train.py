@@ -8,7 +8,7 @@ import torch
 import torch.nn as nn
 # from .patch_architecture import MaterialPatchNet
 from net import MobileNetV3Large
-from dataset_loader import MincDataset, MincLoader, get_free_gpu, ipalm_ignore_classes
+from dataset_loader import MincDataset, MincLoader, get_free_gpu
 import argparse
 
 from torch.optim.lr_scheduler import StepLR

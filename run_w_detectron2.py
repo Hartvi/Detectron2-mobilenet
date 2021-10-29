@@ -1,12 +1,12 @@
 import os
 from detectron2.engine.defaults import DefaultPredictor
 
-from patch_based_material_recognition.image_utils import ImageInfos
-from patch_based_material_recognition.intermediate_data import IntermediateOutputs
+from ipalm.image_utils import ImageInfos
+from ipalm.intermediate_data import IntermediateOutputs
 from train import setup
 
-from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
-from patch_based_material_recognition.utils import *
+from ipalm.detectron2_to_mobilenet import get_materials_from_patches
+from ipalm.utils import *
 from image_to_outputs import image_files2intermediate_data
 
 

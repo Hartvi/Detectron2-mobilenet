@@ -2,8 +2,8 @@ import os
 import cv2
 import pickle
 
-from patch_based_material_recognition.intermediate_data import *
-from patch_based_material_recognition.utils import gpu_to_numpy, get_category_weights_from_csb
+from ipalm.intermediate_data import *
+from ipalm.utils import gpu_to_numpy, get_category_weights_from_csb
 from train import setup
 from detectron2.engine.defaults import DefaultPredictor
 from detectron2.data import MetadataCatalog

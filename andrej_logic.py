@@ -4,15 +4,15 @@ import numpy as np
 
 from detectron2.engine.defaults import DefaultPredictor
 
-from patch_based_material_recognition.image_utils import ImageInfos
+from ipalm.image_utils import ImageInfos
 from train import setup
 
-from patch_based_material_recognition.detectron2_to_mobilenet import get_materials_from_patches
-from patch_based_material_recognition.utils import *
-from patch_based_material_recognition.mapping_utils import material_all_str
-from patch_based_material_recognition import mapping_utils
+from ipalm.detectron2_to_mobilenet import get_materials_from_patches
+from ipalm.utils import *
+from ipalm.mapping_utils import material_all_str
+from ipalm import mapping_utils
 from image_to_outputs import image_files2intermediate_data, get_detectron_categories, image2intermediate_data
-from patch_based_material_recognition.net import MobileNetV3Large
+from ipalm.net import MobileNetV3Large
 
 from typing import List, Tuple, Dict, Union
 from PIL import Image
@@ -37,11 +37,14 @@ class CatmatPredictor:
     """
     Persistent class containing the predictors so the dudes don't have to be reinitialized
     """
-    def __init__(self, threshold, model_path="model_final.pth", category_sensitivity=0.1, material_model_path="saved_model.pth", confusion_matrices="patch_based_material_recognition/confusion_matrices.json"):
+    def __init__(self, threshold, model_path="ipalm/models/model_final.pth", category_sensitivity=0.1,
+                       material_model_path="ipalm/models/saved_model.pth",
+                       confusion_matrices="ipalm/confusion_matrices.json"):
         self.threshold = threshold
         self.model_path = model_path
         cfg = setup()
-        cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+        # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
+        cfg.MODEL.WEIGHTS = model_path
 
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = self.threshold
         self.main_predictor = DefaultPredictor(cfg)

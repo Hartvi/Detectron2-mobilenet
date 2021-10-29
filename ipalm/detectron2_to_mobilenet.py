@@ -8,7 +8,7 @@ from typing import Tuple, List
 
 from .dataset_loader import MincDataset, MincLoader, get_free_gpu
 # from .material_utils import material_str2raw_id, material_raw_id2str, material_ipalm_ignore, material_all_str
-from mapping_utils import *
+from .mapping_utils import *
 from .net import MobileNetV3Large
 
 from .test import *

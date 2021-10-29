@@ -7,7 +7,8 @@ import numpy as np
 import torch
 
 from .dataset_loader import MincDataset, MincLoader, get_free_gpu
-from .material_utils import material_str2raw_id, material_raw_id2str, material_ipalm_ignore, material_all_str
+# from .material_utils import material_str2raw_id, material_raw_id2str, material_ipalm_ignore, material_all_str
+from .mapping_utils import *
 # from .patch_architecture import MaterialPatchNet
 from .net import MobileNetV3Large
 import typing

@@ -98,7 +98,7 @@ class MegatronTrainer(DefaultTrainer):
 
 
 # PREPARE DICTIONARIES
-with open("ipalm/id_to_OWN.json") as json_labels:
+with open("ipalm/config/id_to_OWN.json") as json_labels:
     new_dict = json.load(json_labels)
 
 ordered_list_of_names = []

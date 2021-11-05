@@ -1,4 +1,0 @@
-  File "train.py", line 30
-    scheduler = StepLR(optimizer, step_size=07, gamma=0.4)
-                                             ^
-SyntaxError: invalid token

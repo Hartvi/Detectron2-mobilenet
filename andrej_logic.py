@@ -5,7 +5,7 @@ import numpy as np
 from detectron2.engine.defaults import DefaultPredictor
 
 from ipalm.image_utils import ImageInfos
-from train import setup
+# from train import setup
 
 from ipalm.detectron2_to_mobilenet import get_materials_from_patches
 from ipalm.utils import *
@@ -13,6 +13,7 @@ from ipalm.mapping_utils import material_all_str
 from ipalm import mapping_utils
 from image_to_outputs import image_files2intermediate_data, get_detectron_categories, image2intermediate_data
 from ipalm.net import MobileNetV3Large
+from ipalm.setup_utils import setup
 
 from typing import List, Tuple, Dict, Union
 from PIL import Image
@@ -78,10 +79,10 @@ class CatmatPredictor:
     """
     def __init__(self, threshold, model_path="ipalm/models/model_final.pth", category_sensitivity=0.1,
                        material_model_path="ipalm/models/saved_model.pth",
-                       confusion_matrices="ipalm/confusion_matrices.json"):
+                       confusion_matrices="ipalm/config/confusion_matrices.json"):
         self.threshold = threshold
         self.model_path = model_path
-        cfg = setup()
+        cfg = setup(model_path=model_path)
         # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
         cfg.MODEL.WEIGHTS = model_path
 
@@ -134,7 +135,7 @@ class CatmatPredictor:
 
         # MOBILE NET MATERIAL SECTION
         # shape of `material_outputs`: (number of images, bboxes per image, materials per bbox)
-        material_outputs = get_materials_from_patches(mobile_inputs)
+        material_outputs = get_materials_from_patches(mobile_inputs, model=self.material_model)
         infos.update_with_mobile_outputs(material_outputs)
 
         sensitive_threshold = 0.10
@@ -215,7 +216,7 @@ class CatmatPredictor:
 
 
 if __name__ == "__main__":
-    megapredictor = CatmatPredictor(0.6, model_path="output/model_final.pth")
+    megapredictor = CatmatPredictor(0.6, model_path="ipalm/models/model_final.pth")
     input_imgs = ["images_input/" + f for f in listdir("images_input") if isfile(join("images_input", f))]
     # print(input_imgs)
     for inp_img in input_imgs:

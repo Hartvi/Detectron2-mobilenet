@@ -177,7 +177,7 @@ class CatmatPredictor:
 
 if __name__ == "__main__":
     megapredictor = CatmatPredictor(0.6, model_path="output/model_final.pth")
-    megapredictor.get_andrej("images_input/test01.jpg")
+    print(megapredictor.get_andrej("images_input/test01.jpg"))
     # for i in range(1, 10):
     #     retdict = megapredictor.get_image_boxes(f"images_input/test0{i}.jpg")
     # print(retdict)

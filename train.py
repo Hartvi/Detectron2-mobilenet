@@ -94,27 +94,30 @@ class MegatronTrainer(DefaultTrainer):
         else:
             raise NotImplementedError(f"no optimizer type {optimizer_type}")
 
-#---------------------------------------------
+# ---------------------------------------------
+
 
 # PREPARE DICTIONARIES
-with open("/local/temporary/DATASET/info/id_to_OWN.json") as json_labels:
+with open("id_to_OWN.json") as json_labels:
     new_dict = json.load(json_labels)
 
 ordered_list_of_names = []
 for i in range(len(new_dict)):
     ordered_list_of_names.append(new_dict[str(i)])
 
+
 def get_train_dict():
     with open("/local/temporary/DATASET/train.data", 'rb') as data:
         data = pickle.load(data)
     return data
+
 
 def get_val_dict():
     with open("/local/temporary/DATASET/val.data", 'rb') as data:
         data = pickle.load(data)
     return data
 
-#---------------------------------------------
+# ---------------------------------------------
 
 
 # REGISTER DATASETS

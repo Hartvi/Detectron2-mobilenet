@@ -16,6 +16,11 @@ from ipalm.net import MobileNetV3Large
 
 from typing import List, Tuple, Dict, Union
 from PIL import Image
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+from os import listdir
+from os.path import isfile, join
+import matplotlib.patheffects as PathEffects
 
 
 def get_confidence(probabilities):
@@ -31,6 +36,40 @@ def create_precision_list(confusion_matrix):
             row_sum = 1
         ret[i] = confusion_matrix[i+1][i+1] / row_sum
     return ret
+
+
+def quick_plot_bboxes(instance_predictions, inp_img_path):
+    """Emergency instant plotting. Not quite easy on the eye, but quite easy on the time! ;)
+    For now, plotting only the material prediction.
+
+    Args:
+        instance_predictions: `dict` of instance predictions in format as in `andrej_output_format.txt`
+        inp_img_path: `str` local path to the image
+
+    Returns:
+        plt, `matplotlib.pyplot` plot object containing the picture and labeled bounding boxes
+    """
+    img = mpimg.imread(inp_img_path)
+    fig, ax = plt.subplots()
+    ax.imshow(img)
+    for pred in instance_predictions:
+        y1, x1, y2, x2 = pred['bbox']
+        w = abs(x1 - x2)
+        h = abs(y1 - y2)
+        max_prob = 0
+        max_name = None
+        for matname in pred['material']['names']:
+            if pred['material']['prediction'][matname] >= max_prob:
+                max_prob = pred['material']['prediction'][matname]
+                max_name = matname
+        pred_text = "{}, p = {:.2f}".format(max_name, max_prob)
+        txt = ax.text(x1, y1, pred_text, color="black", fontsize=10, fontweight='bold')
+        txt.set_path_effects([PathEffects.withStroke(linewidth=2, foreground='w')])
+
+        rec = plt.Rectangle((x1, y1), w, h, facecolor='none', linewidth=1, edgecolor='r')
+        ax.add_patch(rec)
+    plt.show()
+    return plt
 
 
 class CatmatPredictor:
@@ -177,9 +216,11 @@ class CatmatPredictor:
 
 if __name__ == "__main__":
     megapredictor = CatmatPredictor(0.6, model_path="output/model_final.pth")
-    print(megapredictor.get_andrej("images_input/test01.jpg"))
-    # for i in range(1, 10):
-    #     retdict = megapredictor.get_image_boxes(f"images_input/test0{i}.jpg")
-    # print(retdict)
-    # raise NotImplementedError
+    input_imgs = ["images_input/" + f for f in listdir("images_input") if isfile(join("images_input", f))]
+    # print(input_imgs)
+    for inp_img in input_imgs:
+        # print(inp_img)
+        predictions = megapredictor.get_andrej(inp_img)
+        quick_plot_bboxes(predictions, inp_img)
+
 

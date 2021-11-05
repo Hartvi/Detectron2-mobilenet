@@ -34,7 +34,7 @@ def get_materials_from_patches(patches_list, model=None) -> Tuple[Tuple[Tuple[Tu
     """
     # ignore non-ipalm materials:
     ipalm_ids = [i for i in range(len(material_all_str)) if material_all_str[i] not in material_ipalm_ignore]
-    model_path = "saved_model.pth"
+    model_path = "/home/robot3/ipalm-vision-github/detectron2/ipalm/models/saved_model.pth"
     if model is None:
         model = MobileNetV3Large(n_classes=len(material_all_str))
         model.load_state_dict(torch.load(model_path))

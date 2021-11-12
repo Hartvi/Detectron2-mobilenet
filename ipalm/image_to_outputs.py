@@ -20,6 +20,16 @@ import json
 
 
 def get_detectron_categories(predictor, intermediate_outputs, detectron_instances: IntermediateOutputs) -> np.ndarray:
+    """
+
+    Args:
+        predictor: detectron predictor(cfg)
+        intermediate_outputs: list of images to plug into detectron2 again
+        detectron_instances: list of detectron output instances corresponding to 'intermediate_outputs'
+
+    Returns:
+        List[List[probabilities]]
+    """
     detectron_categories = list()
     for k, (ims, detectron_output) in enumerate(zip(intermediate_outputs, detectron_instances)):
         per_im_classes = list()
@@ -43,14 +53,20 @@ def get_detectron_categories(predictor, intermediate_outputs, detectron_instance
 
 
 def image2intermediate_data(predictor, image_arr) -> IntermediateData:
+    """
+
+    Args:
+        predictor: detectron predictor(cfg)
+        image_arr: raw image to convert to IntermediateData
+
+    Returns:
+        IntermediateData for one image
+    """
     im_names: List[str] = list()
     inter_outputs: List[IntermediateOutput] = list()
     mobile_inputs: List[IntermediateInput] = list()
     detectron_inputs: List[IntermediateInput] = list()
 
-    # for cnt, im_name in enumerate(image_names):
-    # predict
-    # im = cv2.imread(im_name)
     output = predictor(image_arr)
     output = output["instances"].to("cpu")
     inter_output, mobile_input, detectron_input = detectron2_output_to_mobile_input(image_arr, output)  # this converts BGR to RGB
@@ -68,6 +84,15 @@ def image2intermediate_data(predictor, image_arr) -> IntermediateData:
 
 
 def image_files2intermediate_data(predictor, image_names) -> IntermediateData:
+    """
+
+    Args:
+        predictor: detectron predictor(cfg)
+        image_names: list of image file paths
+
+    Returns:
+        IntermediateData for one image
+    """
     im_names: List[str] = list()
     inter_outputs: List[IntermediateOutput] = list()
     mobile_inputs: List[IntermediateInput] = list()
@@ -169,10 +194,6 @@ def get_mobilenet_input(im, output, padding=30, outsize=362, max_deformation=3):
             resized_image = cv2.resize(sub_image, dsize=(outsize, outsize), interpolation=cv2.INTER_CUBIC)
             square_ims.append(resized_image)
             deformations.append(deformation)
-            # scores.append(score)
-            # print("w:", sub_image.shape[1], "h:", sub_image.shape[0], "targetsize", outsize, deformation_score(sub_image.shape[1], sub_image.shape[0], outsize**2))
-            # out_im = Image.fromarray(resized_image)
-            # out_im.save("bbox_vis-{}-{}_{}_{}_{}.png".format(deformation, x1, y1, x2, y2))
     return square_ims, deformations
 
 
@@ -272,7 +293,7 @@ def main():
 
     # PATHS SETUP
     trn_data = '/local/temporary/DATASET/TRAIN'
-    pred_dir = "images_input"
+    pred_dir = "../images_input"
     img_output = "images_output"
 
     # video is having problems :/

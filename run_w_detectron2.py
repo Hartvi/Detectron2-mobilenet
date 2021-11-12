@@ -7,7 +7,7 @@ from train import setup
 
 from ipalm.detectron2_to_mobilenet import get_materials_from_patches
 from ipalm.utils import *
-from image_to_outputs import image_files2intermediate_data
+from ipalm.image_to_outputs import image_files2intermediate_data
 
 
 def main():

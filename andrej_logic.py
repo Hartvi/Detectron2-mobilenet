@@ -1,22 +1,18 @@
-import os
 import torch
-import numpy as np
 
 from detectron2.engine.defaults import DefaultPredictor
 
 from ipalm.image_utils import ImageInfos
-# from train import setup
 
 from ipalm.detectron2_to_mobilenet import get_materials_from_patches
 from ipalm.utils import *
 from ipalm.mapping_utils import material_all_str
 from ipalm import mapping_utils
-from image_to_outputs import image_files2intermediate_data, get_detectron_categories, image2intermediate_data
+from ipalm.image_to_outputs import image_files2intermediate_data, get_detectron_categories, image2intermediate_data
 from ipalm.net import MobileNetV3Large
 from ipalm.setup_utils import setup
 
-from typing import List, Tuple, Dict, Union
-from PIL import Image
+from typing import List, Tuple, Dict, Union, Iterable
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from os import listdir
@@ -25,11 +21,27 @@ import matplotlib.patheffects as PathEffects
 
 
 def get_confidence(probabilities):
+    """
+
+    Args:
+        probabilities: list of probabilities
+
+    Returns:
+        highest probability - second highest probability
+    """
     sorted_arr = np.sort(probabilities)[::-1]
     return sorted_arr[0] - sorted_arr[1]
 
 
 def create_precision_list(confusion_matrix):
+    """
+
+    Args:
+        confusion_matrix: (N+1) x (N+1) confusion matrix, used classification submatrix: M[1:][1:]
+
+    Returns:
+        precision for each class (N-1) precisions
+    """
     ret = [0.0 for _ in range(len(confusion_matrix)-1)]
     for i in range(len(confusion_matrix)-1):
         row_sum = sum(confusion_matrix[i+1][1:])
@@ -75,7 +87,8 @@ def quick_plot_bboxes(instance_predictions, inp_img_path):
 
 class CatmatPredictor:
     """
-    Persistent class containing the predictors so the dudes don't have to be reinitialized
+    Persistent class containing Detectron2 for object detection and classification
+        and a MobileNetV3 for material classification so they don't have to be reinitialized
     """
     def __init__(self, threshold, model_path="ipalm/models/model_final.pth", category_sensitivity=0.1,
                        material_model_path="ipalm/models/saved_model.pth",
@@ -83,7 +96,6 @@ class CatmatPredictor:
         self.threshold = threshold
         self.model_path = model_path
         cfg = setup(model_path=model_path)
-        # cfg.MODEL.WEIGHTS = os.path.join(cfg.OUTPUT_DIR, "model_final.pth")
         cfg.MODEL.WEIGHTS = model_path
 
         cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = self.threshold
@@ -107,15 +119,21 @@ class CatmatPredictor:
         self.category_cm = cm_dict["category_confusion_matrix"]
         self.category_precisions = create_precision_list(self.category_cm)
         self.material_cm = cm_dict["material_confusion_matrix"]
-        # print(self.material_cm)
         self.material_precisions = create_precision_list(self.material_cm)
-        # print(self.material_precisions)
 
         # andrej format shit
         self.category_names = mapping_utils.category_ipalm_list
         self.material_names = mapping_utils.material_ipalm_list
 
-    def get_image_boxes(self, src):
+    def get_image_boxes(self, src: Union[str, Iterable]) -> List[Dict]:
+        """
+            List[Dict["initial_bbox"/"category_list"/"material_list"]
+        Args:
+            src: path or the raw image data to be processed
+
+        Returns:
+            list of dictionaries with categories/materials for every bbox from detectron2
+        """
         if type(src) == str:
             # from path
             intermediate_data = image_files2intermediate_data(self.main_predictor, [src, ])
@@ -153,6 +171,15 @@ class CatmatPredictor:
         return image_boxes
 
     def get_andrej(self, src, output_target=None) -> Union[None, List[Dict]]:
+        """
+        Get dictionary in andrej_output_format.txt format
+        Args:
+            src: path or the raw image data to be processed
+            output_target: None->return andrej dict, your_dict_name.json->writes to the file
+
+        Returns:
+
+        """
         if type(src) == str:
             boxresults = self.get_image_boxes(src)
             andrej_dicts = list()
@@ -204,23 +231,12 @@ class CatmatPredictor:
                 return None
             elif output_target is None:
                 return andrej_dicts
-            # global precision
-            # local confidence
-            # list of categories
-            # catname: prob
-
-            # global precision
-            # local confidence
-            # list of materials
-            # matname: prob
 
 
 if __name__ == "__main__":
     megapredictor = CatmatPredictor(0.6, model_path="ipalm/models/model_final.pth")
     input_imgs = ["images_input/" + f for f in listdir("images_input") if isfile(join("images_input", f))]
-    # print(input_imgs)
     for inp_img in input_imgs:
-        # print(inp_img)
         predictions = megapredictor.get_andrej(inp_img)
         quick_plot_bboxes(predictions, inp_img)
 

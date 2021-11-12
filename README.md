@@ -1,7 +1,33 @@
+Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smaller MINC2500 dataset and the default Detectron2 InstanceSegmentor trained on COCO, ShopVRB, YCB and a few custom images.
 
-This is a fusion of a MobilenetV3 trained on the smaller MINC2500 dataset and the default Detectron2 InstanceSegmentor trained on COCO, ShopVRB, YCB and a few custom images.
 
-Installation and use instructions coming soon.
+### How to install:
+1. Go to some folder A and: `git clone https://github.com/Hartvi/Detectron2-mobilenet`
+    - This will create the folder called `Detectron2-mobilenet
+2. Rename `Detectron2-mobilenet` to `detectron2`
+3. In folder A: `python -m pip install -e detectron2 --user`
+4. ???
+5. Profit 1 billion dollars
+
+### Short demo (in folder A):
+
+(Not sure if it works exactly this way)
+```
+from detectron2 import andrej_logic
+
+megapredictor = CatmatPredictor(threshold=0.6)
+# folder with images: "images_input/[some_images]"
+input_imgs = ["images_input/" + f for f in listdir("images_input") if isfile(join("images_input", f))]
+# CatMatPredictor.get_andrej(raw_image[arr]/image_path[str]) returns a list of dictionaries for 
+for inp_img in input_imgs:
+    # this is a list of dicts in andrej format, see ipalm/andrej_output_format
+    # optional argument: output_target="your_file_name.json" to save the dicts in json format
+    predictions = megapredictor.get_andrej(inp_img)  
+    # andrej plot:
+    quick_plot_bboxes(predictions, inp_img)
+```
+
+
 
 ## License
 

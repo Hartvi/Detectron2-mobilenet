@@ -11,7 +11,7 @@ Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smal
 
 ### Short demo (in folder A):
 
-(Not sure if it works exactly this way)
+(Not sure if the import can be made to work this way)
 ```
 from detectron2 import andrej_logic
 

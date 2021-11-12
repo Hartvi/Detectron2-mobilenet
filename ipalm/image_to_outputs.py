@@ -197,7 +197,6 @@ def get_mobilenet_input(im, output, padding=30, outsize=362, max_deformation=3):
     return square_ims, deformations
 
 
-
 def detectron2_output_2_mask(output):
     """outputs["instances"]
        members: _image_size 2tuple, pred_boxes 4tuple,

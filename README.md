@@ -1,5 +1,10 @@
 Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smaller MINC2500 dataset and the default Detectron2 InstanceSegmentor trained on COCO, ShopVRB, YCB and a few custom images.
 
+### Project structure
+The base of the project is the detectron2 framework's instance segmentation backbone by [facebookresearch](https://github.com/facebookresearch/detectron2). 
+Initially we tried to add a material segmentation/classification head to the instance segmentation network, however that proved to be exceedingly confusing because of the structure of the project. See the [progress log](https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm-vir2020-object-category-from-image/-/blob/master/code/PROGRESS.md) for details on how and why it was unfeasible given our constraints.
+
+We ended up using just the default instance segmentor from VIR, retrained because something in either a newer detectron2 or pytorch version changed something in the background. The bounding boxes gathered from detectron2 are then plugged in a mobilenetv3 classifier trained on the MINC 2500 dataset.
 
 ### How to install:
 1. Go to some folder A and: `git clone https://github.com/Hartvi/Detectron2-mobilenet`
@@ -11,7 +16,6 @@ Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smal
 
 ### Short demo (in folder A):
 
-(Not sure if the import can be made to work this way)
 ```
 from detectron2 import andrej_logic
 

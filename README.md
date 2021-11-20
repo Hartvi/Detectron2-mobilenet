@@ -22,7 +22,7 @@ The following picture contains an explanation how categories are weighted. There
 
 
 <div align=center>
-    <img src="https://i.imgur.com/IpxOxNd.png" alt="drawing" width="700"/><br>
+    <img src="https://i.imgur.com/IpxOxNd.png" alt="drawing" width="500"/><br>
     Figure 2. Category and material probability calculation.
 </div>
 

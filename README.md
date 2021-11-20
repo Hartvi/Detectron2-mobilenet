@@ -43,7 +43,7 @@ The following picture contains an explanation how categories are weighted. There
 5. Profit 1 billion dollars
 
 
-### Short demo (in folder A):
+### Short demo:
 
 ```
 from detectron2 import andrej_logic

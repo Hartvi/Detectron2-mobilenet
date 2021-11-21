@@ -6,9 +6,19 @@ Initially we tried to add a material segmentation/classification head to the ins
 
 We ended up using just the default instance segmentor from VIR, retrained because something in either a newer detectron2 or pytorch version changed something in the background. The bounding boxes gathered from detectron2 are then plugged back into detectron2 this time used as a category classifier and into a MobileNetV3 material classifier trained on the [MINC 2500](http://opensurfaces.cs.cornell.edu/publications/minc/) dataset.
 
-# TODO: 
-- insert images explaining the information flow
-- short summaries of the ipalm project files
+### Encountered challenges
+#### 1. Detectron2 project structure
+I spent about 3 work weeks trying to add a ROIHead to detectron2 that would also classify the material properties of the object inside the bounding box, however adding a head to detectron required a non-trivial modification of the project. None of the IDEs let alone searching through the raw text helped very much in determining where the program was being executed. A rough ROIHead definition in a yaml file, calling the python class using its string name in the yaml, some configuration in the python script, some configuration is completely hidden, actual ROIHead code as a python class, backprop functions, dataset processing and formatting, nesting the classification into the bounding box, etc.
+
+#### 2. Dataset formatting
+The dataset formatting in COCO was done by Michal Pliska in the VIR subject. Formatting MINC2500 was only a minor issue of 2 of the 57500 images being single channel black and white, which crashed the training seemingly randomly.
+
+### Andrej inerface
+Andrej requires precision, Andrej requires probabilities.
+
+The COCO style dataset compiled during the VIR project has labels in the format `integer: "category - material"` in human readable terms. However, the MINC materials do not exactly correspond to the materials from the COCO-style datasets, so we selected 8 materials from MINC to use for this project. 
+
+The precision that Andrej requires is then calculated from the confusion matrix gained from running the networks on the test dataset that was used to train the basic Detectron2 for VIR. The first row and column of the matrix are ignored because those are the cases when the bounding boxes didn't contain any object from the labels.
 
 ## Information flow
 The high-level structure of the project is the following. The input image is fed into Detectron2 which is first used to locate objects of interest and its output data is saved. The bounding boxes gained from the first pass are extracted and plugged into Detectron2 (again) and also into MobileNet.

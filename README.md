@@ -18,7 +18,7 @@ Andrej requires precision, Andrej requires probabilities.
 
 The COCO style dataset compiled during the VIR project has labels in the format `integer: "category - material"` in human readable terms. However, the MINC materials do not exactly correspond to the materials from the COCO-style datasets, so we selected 8 materials from MINC to use for this project. 
 
-The precision that Andrej requires is then calculated from the confusion matrix gained from running the networks on the test dataset that was used to train the basic Detectron2 for VIR. The first row and column of the matrix are ignored because those are the cases when the bounding boxes didn't contain any object from the labels.
+The precision that Andrej requires is then calculated from the confusion matrix gained from running the networks on the test dataset that was used to train the basic Detectron2 for VIR. The first row and column of the matrix are ignored because those are the cases when the bounding boxes didn't contain any object in the image.
 
 ## Information flow
 The high-level structure of the project is the following. The input image is fed into Detectron2 which is first used to locate objects of interest and its output data is saved. The bounding boxes gained from the first pass are extracted and plugged into Detectron2 (again) and also into MobileNet.

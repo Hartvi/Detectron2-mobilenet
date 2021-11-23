@@ -1,7 +1,8 @@
 Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smaller MINC2500 dataset and the default Detectron2 InstanceSegmentor trained on COCO, [ShopVRB](https://michaal94.github.io/SHOP-VRB/), [YCB](https://www.ycbbenchmarks.com/) and a few custom images.
 
-Repository for training the MobileNet on MINC2500 [here](https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm-vir2020-object-category-from-image/-/tree/master/code/patch_based_material_recognition).
-Repository for creating test data and evaluating test data for this project to create the confusion matrix from which the precision for Andrej is calculated [here](https://github.com/Hartvi/ImPointAnnotator).
+- Repository for training MobileNet on MINC2500 [here](https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm-vir2020-object-category-from-image/-/tree/master/code/patch_based_material_recognition) (gitlab).
+
+- Repository for creating test data and evaluating test data for this project to create the confusion matrix from which the precision for Andrej is calculated [here](https://github.com/Hartvi/ImPointAnnotator) (github).
 
 ### Prerequisites
 - Versions of packages used:

@@ -14,6 +14,7 @@ Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smal
 - clarify the diagrams
 - formalize the text
 - list the materials that are used from MINC
+- make a backup of this epo and make a fork of it from the original detectron repository
 - etc
 
 ### Prerequisites

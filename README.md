@@ -1,8 +1,12 @@
+# Object detection, category classification and material classification for IPALM
+
 Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smaller MINC2500 dataset and the default Detectron2 InstanceSegmentor trained on COCO, [ShopVRB](https://michaal94.github.io/SHOP-VRB/), [YCB](https://www.ycbbenchmarks.com/) and a few custom images.
 
 - Repository for training MobileNet on MINC2500 [here](https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm-vir2020-object-category-from-image/-/tree/master/code/patch_based_material_recognition) (gitlab).
 
 - Repository for creating test data and evaluating test data for this project to create the confusion matrix from which the precision for Andrej is calculated [here](https://github.com/Hartvi/ImPointAnnotator) (github).
+
+- Files added for the ipalm project, such as the material classification script are located in [ipalm/](https://github.com/Hartvi/Detectron2-mobilenet/tree/main/ipalm)
 
 ### Prerequisites
 - Versions of packages used:
@@ -47,6 +51,8 @@ The COCO style dataset compiled during the VIR project has labels in the format 
 The precision that Andrej requires is then calculated from the confusion matrix gained from running the networks on the test dataset that was used to train the basic Detectron2 for VIR. The first row and column of the matrix are ignored because those are the cases when the bounding boxes didn't contain any object in the image.
 
 ## Information flow
+For a summary of the contents of the files added for the ipalm project, see the [ipalm/README.md](https://github.com/Hartvi/Detectron2-mobilenet/tree/main/ipalm#readme)
+
 The high-level structure of the project is the following. The input image is fed into Detectron2 which is first used to locate objects of interest and its output data is saved. The bounding boxes gained from the first pass are extracted and plugged into Detectron2 (again) and also into MobileNet.
 <div align=center>
     <img src="https://i.imgur.com/JcbV39e.png" alt="drawing" width="500"/><br>
@@ -74,10 +80,6 @@ I spent about 3 work weeks trying to add a ROIHead to detectron2 that would also
 
 #### 2. Dataset formatting
 The dataset formatting in COCO was done by Michal Pliska in the VIR subject. Formatting MINC2500 was only a minor issue of 2 of the 57500 images being single channel black and white, which crashed the training seemingly randomly.
-
-
-
-
 
 ## License
 

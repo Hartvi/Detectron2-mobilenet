@@ -9,6 +9,8 @@ Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smal
 - Files added for the ipalm project, such as the material classification script are located in [ipalm/](https://github.com/Hartvi/Detectron2-mobilenet/tree/main/ipalm)
 
 ### Prerequisites
+- Tested on Ubuntu & debian
+- Requires Linux with CUDA
 - Versions of packages used:
   - `torchvision/0.9.1-fosscuda-2019b-PyTorch-1.8.0`
   - `OpenCV/3.4.8-fosscuda-2019b-Python-3.7.4`
@@ -19,10 +21,11 @@ Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smal
 ### How to install:
 1. Go to some folder A and: `git clone https://github.com/Hartvi/Detectron2-mobilenet`
     - This will create the folder called `Detectron2-mobilenet
-2. Rename `Detectron2-mobilenet` to `detectron2`
+2. Rename `Detectron2-mobilenet` to `detectron2`: `mv Detectron2-mobilenet detectron2`
 3. In folder A: `python -m pip install -e detectron2 --user`
 4. ???
 5. Profit 1 billion dollars
+- All in one: `git clone https://github.com/Hartvi/Detectron2-mobilenet && mv Detectron2-mobilenet detectron2 && python -m pip install -e detectron2 --user`
 
 
 ### Short demo:

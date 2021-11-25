@@ -4,9 +4,17 @@ Part of the IPALM project, this is a fusion of a MobilenetV3 trained on the smal
 
 - Repository for training MobileNet on MINC2500 [here](https://gitlab.fel.cvut.cz/body-schema/ipalm/ipalm-vir2020-object-category-from-image/-/tree/master/code/patch_based_material_recognition) (gitlab).
 
-- Repository for creating test data and evaluating test data for this project to create the confusion matrix from which the precision for Andrej is calculated [here](https://github.com/Hartvi/ImPointAnnotator) (github).
+- Repository for creating test data and evaluating test data for this project to create the confusion matrix from which the precision is calculated [here](https://github.com/Hartvi/ImPointAnnotator) (github).
 
 - Files added for the ipalm project, such as the material classification script are located in [ipalm/](https://github.com/Hartvi/Detectron2-mobilenet/tree/main/ipalm)
+
+# TODO
+- remove personal references => remove Andrej ;-;
+- add examples of how an input image is processed
+- clarify the diagrams
+- formalize the text
+- list the materials that are used from MINC
+- etc
 
 ### Prerequisites
 - Tested on Ubuntu & debian
@@ -41,17 +49,17 @@ for inp_img in input_imgs:
     # this is a list of dicts in andrej format, see ipalm/andrej_output_format
     # optional argument: output_target="your_file_name.json" to save the dicts in json format
     predictions = megapredictor.get_andrej(inp_img)  
-    # andrej plot:
+    # plot:
     quick_plot_bboxes(predictions, inp_img)
 ```
 
 
-### Andrej interface
-Andrej requires precision, Andrej requires probabilities.
+### Output interface
+The outputs are going to be further processed downstream and they require precision and probabilities.
 
 The COCO style dataset compiled during the VIR project has labels in the format `integer: "category - material"` in human readable terms. However, the MINC materials do not exactly correspond to the materials from the COCO-style datasets, so we selected 8 materials from MINC to use for this project. 
 
-The precision that Andrej requires is then calculated from the confusion matrix gained from running the networks on the test dataset that was used to train the basic Detectron2 for VIR. The first row and column of the matrix are ignored because those are the cases when the bounding boxes didn't contain any object in the image.
+The requiredprecision is then calculated from the confusion matrix gained from running the networks on the test dataset that was used to train the basic Detectron2 for VIR. The first row and column of the matrix are ignored because those are the cases when the bounding boxes didn't contain any object in the image.
 
 ## Information flow
 For a summary of the contents of the files added for the ipalm project, see the [ipalm/README.md](https://github.com/Hartvi/Detectron2-mobilenet/tree/main/ipalm#readme)

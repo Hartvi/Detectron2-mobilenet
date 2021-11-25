@@ -1,3 +1,5 @@
+# Utilities for extra material & category classification for the IPALM project
+
 This folder contains all the custom files added as part of the ipalm project.
 
 ### File summaries
@@ -16,8 +18,11 @@ confusion_matrices="ipalm/config/confusion_matrices.json"
 - `intermediate_data.py`:
 <img src="https://i.imgur.com/pqltyJA.png" width=500>
 
+An image is plugged into Detectron2, we get instance segmentation, bounding boxes and confidence score for the highest category. We cut out the bounding boxes from the original image and input each cutout back into the original Detectron2 - but with a lower threshold score to get many outputs - and into MobileNet to get material classification.
+
+
 - `andrej_logic.py` - main class interface of this script. Contains [CatMatPredictor](https://github.com/Hartvi/Detectron2-mobilenet/blob/4f7e5f1a54f5be6b773dddd3905443f9d35c0d74/andrej_logic.py#L88) which has the method get_andrej
-- `mapping_utils.py` - contains all the mappings between the 66 old VIR detectron2 outputs to just the classes (36), chosen materials from MINC (8). The old VIR outputs are tuples: (category - material) therefore they can be mapped to 36 categories and roughly 8 materials from MINC.
+- `mapping_utils.py` - contains all the mappings between the 66 old VIR detectron2 outputs to just the classes (36), chosen materials from MINC (8). The 66 old VIR outputs are tuples: (category - material) therefore they can be mapped to 36 categories and roughly 8 materials from MINC.
 - `test.py` - contains some testing/evaluation functions
 - `setup_utils.py` - contains the setup function for detectron2
 

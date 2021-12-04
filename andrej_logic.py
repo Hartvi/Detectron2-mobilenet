@@ -195,6 +195,7 @@ class CatmatPredictor:
                 andrej_dict["bbox"] = boxresult["initial_bbox"]
                 # "metrics"
                 cat_metrics_dict["confidence"] = get_confidence(category_list)
+                # precision of the whole classifier
                 cat_metrics_dict["precision"] = self.category_precision
                 category_dict["metrics"] = cat_metrics_dict
                 # "names"
